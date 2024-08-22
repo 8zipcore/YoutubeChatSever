@@ -17,7 +17,14 @@ public func configure(_ app: Application) async throws {
         database: Environment.get("DATABASE_NAME") ?? "vapor_database",
         tls: .prefer(try .init(configuration: .clientDefault)))
     ), as: .psql)
-
+    
+    print("✅ 환경 변수")
+    print("DATABASE_HOST : \(Environment.get("DATABASE_HOST") ?? "nil")")
+    print("DATABASE_PORT : \(Environment.get("DATABASE_PORT").flatMap(Int.init(_:)) ?? 0)")
+    print("DATABASE_USERNAME : \(Environment.get("DATABASE_USERNAME") ?? "nil")")
+    print("DATABASE_PASSWORDT : \(Environment.get("DATABASE_PASSWORD") ?? "nil")")
+    print("DATABASE_NAME : \(Environment.get("DATABASE_NAME") ?? "nil")")
+    
     app.migrations.add(CreateUsers())
     app.migrations.add(CreateChatRooms())
     app.migrations.add(CreateCategories())
