@@ -103,13 +103,16 @@ class YoutubeManager{
             }
         }
         
+        
+        
         // 요청 보낼 URL 생성
         var urlComponents = URLComponents(string: "https://youtube.googleapis.com/youtube/v3/videos")!
+        let apiKey = Environment.get("YOUTUBE_API_KEY")
         
         urlComponents.queryItems = [
             URLQueryItem(name: "part", value: "snippet,contentDetails"),
             URLQueryItem(name: "id", value: id),
-            URLQueryItem(name: "key", value: "")
+            URLQueryItem(name: "key", value: apiKey ?? "")
         ]
         
         guard let response = try await req.client.get(URI(string: urlComponents.string!)).body,
