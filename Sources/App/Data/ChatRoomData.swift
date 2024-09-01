@@ -18,4 +18,5 @@ struct ChatRoomData: Content{
     var participants: [User] // ChatRoom과 다른 변수 !!
     var chatOptions: [Int]
     var categories: [String]
+    var lastChatTime: Double
 }

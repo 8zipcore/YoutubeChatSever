@@ -47,9 +47,9 @@ struct CategoryController: RouteCollection{
             let participantIds = chatRoom.participantIds
             for id in participantIds {
                 if let user = try await User.find(id, on: req.db) {
-                    if chatRoom.chatOptions.contains(ChatOption.anonymous.rawValue){
+                    /*if chatRoom.chatOptions.contains(ChatOption.anonymous.rawValue){
                         user.name = "익명\(users.count + 1)"
-                    }
+                    }*/
                     users.append(user)
                 }
             }
@@ -58,11 +58,13 @@ struct CategoryController: RouteCollection{
     }
     
     func chatRoomToChatRoomData(_ chatRoom: ChatRoom, req: Request?) async throws -> ChatRoomData{
+        var participants: [User] = []
         if let req = req, let id = chatRoom.id {
             let users = try await fetchParticipants(id: id, req: req)
-            return ChatRoomData(id: chatRoom.id, name: chatRoom.name, description: chatRoom.description, image: chatRoom.image, enterCode: chatRoom.enterCode, hostId: chatRoom.hostId, participantIds: chatRoom.participantIds, participants: users, chatOptions: chatRoom.chatOptions, categories: chatRoom.categories)
-        } else {
-            return ChatRoomData(id: chatRoom.id, name: chatRoom.name, description: chatRoom.description, image: chatRoom.image, enterCode: chatRoom.enterCode, hostId: chatRoom.hostId, participantIds: chatRoom.participantIds, participants: [], chatOptions: chatRoom.chatOptions, categories: chatRoom.categories)
+            participants = users
         }
+            
+        return ChatRoomData(id: chatRoom.id, name: chatRoom.name, description: chatRoom.description, image: chatRoom.image, enterCode: chatRoom.enterCode, hostId: chatRoom.hostId, participantIds: chatRoom.participantIds, participants: participants, chatOptions: chatRoom.chatOptions, categories: chatRoom.categories, lastChatTime: chatRoom.lastChatTime)
+        
     }
 }

@@ -8,9 +8,9 @@
 import Vapor
 
 enum ChatOption: Int, Codable{
-    case anonymous
     case videoAddDenied
-    case privateRoom
+    case searchAllowed
+    case password
 }
 
 enum MessageType:Int, Codable{
@@ -24,7 +24,7 @@ struct Message: Content{
     var messageType: MessageType
     var text: String = ""
     var image: String?
-    var timestamp: TimeInterval?
+    var timestamp: Double
     var isRead: Bool
 }
 

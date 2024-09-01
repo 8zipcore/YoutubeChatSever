@@ -27,6 +27,21 @@ class YoutubeManager{
                     .create()
     }
     
+    func dropYoutubeTable(_ chatRoomId:UUID, _ req: Request)async throws {
+        let db = req.db as! SQLDatabase
+        
+        let scheme = "\"\(chatRoomId.uuidString)_youtube\""
+        
+        let query = SQLQueryString("DROP TABLE \(unsafeRaw: scheme)")
+
+        let _ = db.raw(query).run()
+            .flatMapErrorThrowing { error in
+                // SQL 쿼리 실행 오류 처리
+                print(String(reflecting: error))
+                throw Abort(.internalServerError, reason: "Failed to execute query: \(error)")
+            }
+    }
+    
     func fetchVideos(_ chatRoomId: UUID, _ req: Request) async throws -> [Video]{
         let db = req.db as! SQLDatabase
         
@@ -112,7 +127,7 @@ class YoutubeManager{
         urlComponents.queryItems = [
             URLQueryItem(name: "part", value: "snippet,contentDetails"),
             URLQueryItem(name: "id", value: id),
-            URLQueryItem(name: "key", value: apiKey ?? "")
+            URLQueryItem(name: "key", value: apiKey ?? "AIzaSyAGGG0psQI750JmogzFzdKiStjgXdSHYrY")
         ]
         
         guard let response = try await req.client.get(URI(string: urlComponents.string!)).body,

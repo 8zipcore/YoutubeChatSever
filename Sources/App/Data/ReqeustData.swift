@@ -7,16 +7,17 @@
 
 import Vapor
 
-struct EnterChatRequestData: Content{
-    var enterCode: String
-    var userId: UUID
-}
-
 struct YoutubeRequestData: Content{
     var url: String
 }
 
-struct EnterChatRoomData: Content{
+struct EnterChatRoomData: Codable{
+    var chatRoomId: UUID
+    var enterCode: String
+    var userId: UUID
+}
+
+struct ChatRoomRequestData: Codable{
     var chatRoomId: UUID
     var userId: UUID
 }

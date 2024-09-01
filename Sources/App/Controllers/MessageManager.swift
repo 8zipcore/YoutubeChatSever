@@ -65,14 +65,9 @@ actor MessageManager{
             var senderName = ""
             
             if message.messageType == .video || message.messageType == .enter || message.messageType == .leave {
-                // 익명일 때
-                if let chatRoom = try await ChatRoom.find(data.chatRoomId, on: req.db), chatRoom.chatOptions.contains(ChatOption.anonymous.rawValue){
-                    senderName = "익명\(chatRoom.participantIds.count)"
-                } else {
-                    senderName = try await User.find(message.senderId, on: req.db).flatMap{
-                        return $0.name
-                    } ?? ""
-                }
+                senderName = try await User.find(message.senderId, on: req.db).flatMap{
+                    return $0.name
+                } ?? ""
             }
             
             switch message.messageType{
@@ -87,10 +82,19 @@ actor MessageManager{
                 message.text = "\(senderName)님이 퇴장하셨습니다."
             }
             
-            message.timestamp = TimeInterval()
+            message.timestamp = Date().timeIntervalSince1970
             
             try await saveMessage(message, req)
             try await sendData(message.chatRoomId, .message, message)
+            print("✅ sendData : \(message.text)")
+            
+            // 채팅 시간 업데이트
+            if [.text, .image, .video].contains(message.messageType){
+                let _ = try await ChatRoom.find(message.chatRoomId, on: req.db).flatMap{
+                    $0.lastChatTime = message.timestamp
+                    return $0.update(on: req.db)
+                }
+            }
         }
     }
     
@@ -98,7 +102,7 @@ actor MessageManager{
         let db = req.db as! SQLDatabase
         
         let scheme = "\"\(data.chatRoomId)\""
-        let query = SQLQueryString("INSERT INTO \(unsafeRaw: scheme) (id, groupchat_id, sender_id, type, message, image, timestamp) VALUES (\(bind: UUID()), \(bind: data.chatRoomId), \(bind: data.senderId), \(bind: data.messageType), \(bind: data.text), \(bind: data.image), \(bind: TimeInterval()))")
+        let query = SQLQueryString("INSERT INTO \(unsafeRaw: scheme) (id, groupchat_id, sender_id, type, message, image, timestamp) VALUES (\(bind: UUID()), \(bind: data.chatRoomId), \(bind: data.senderId), \(bind: data.messageType), \(bind: data.text), \(bind: data.image), \(bind: data.timestamp))")
 
         let _ = db.raw(query).run()
             .flatMapErrorThrowing { error in
