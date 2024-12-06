@@ -37,7 +37,7 @@ actor MessageManager{
                     .id()
                     .field("groupchat_id", .uuid)
                     .field("sender_id", .uuid)
-                    .field("type", .int8)
+                    .field("type", .int64)
                     .field("message", .string)
                     .field("image", .string)
                     .field("timestamp", .double)

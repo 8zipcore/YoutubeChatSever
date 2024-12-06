@@ -8,7 +8,7 @@
 import Vapor
 
 enum ChatOption: Int, Codable{
-    case videoAddDenied
+    case videoAddAllowed
     case searchAllowed
     case password
 }

@@ -141,7 +141,7 @@ struct ChatController: RouteCollection{
     
     func fetchAllChatRoom(req: Request) async throws -> [ChatRoomData]{
         let chatRooms = try await ChatRoom.query(on: req.db).all().filter{
-            !$0.chatOptions.contains(ChatOption.searchAllowed.rawValue)
+            $0.chatOptions.contains(ChatOption.searchAllowed.rawValue)
         }
         var chatRoomDatas: [ChatRoomData] = []
         for chatRoom in chatRooms {

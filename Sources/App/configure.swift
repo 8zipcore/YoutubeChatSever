@@ -31,16 +31,8 @@ public func configure(_ app: Application) async throws {
     
     app.routes.defaultMaxBodySize = "15mb"
     
-    // 💌 Mailgun
-//    app.mailgun.configuration = .init(apiKey: "1f867fcb14f55b93b98b2ea97485351e-0996409b-15a30e0c")
-//    app.mailgun.defaultDomain = .test
-
     // register routes
     try routes(app)
     
     try await app.autoMigrate().get()
-}
-
-extension MailgunDomain {
-    static var test: MailgunDomain { .init("sandboxd62a243140064067b49523bfe6145f33.mailgun.org", .us) }
 }
