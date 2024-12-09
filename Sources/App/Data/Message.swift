@@ -14,7 +14,7 @@ enum ChatOption: Int, Codable{
 }
 
 enum MessageType:Int, Codable{
-    case text, image, video, enter, leave
+    case text, image, video, enter, leave, reconnect
 }
 
 struct Message: Content{

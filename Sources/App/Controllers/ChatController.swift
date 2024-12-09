@@ -48,6 +48,8 @@ struct ChatController: RouteCollection{
                         let data = AddVideoRequestData(chatRoomId: message.chatRoomId, userId: message.senderId, url: message.text)
                         let video = try await self.addVideo(data: data, req: req)
                         try await MessageManager.shared.sendData(data.chatRoomId, .video, video)
+                    } else if message.messageType == .reconnect {
+                        await MessageManager.shared.reconnectWebSocket(message, req, ws)
                     } else {
                         await MessageManager.shared.addMessage(message, req)
                     }
@@ -91,12 +93,12 @@ struct ChatController: RouteCollection{
         }
         
         if let chatRoom = chatRoom {
-            if chatRoom.enterCode == enterChatData.enterCode{
-                let chatRoomData = try await chatRoomToChatRoomData(chatRoom, req: req)
-                let _ = try await chatRoom.update(on: req.db)
-                return ChatRoomResponseData(responseCode: .success, chatRoom: chatRoomData)
+            if (chatRoom.chatOptions.contains(ChatOption.password.rawValue) && chatRoom.enterCode != enterChatData.enterCode){
+                return ChatRoomResponseData(responseCode: .failure, chatRoom: nil)
             }
-            return ChatRoomResponseData(responseCode: .failure, chatRoom: nil)
+            let _ = try await chatRoom.update(on: req.db)
+            let chatRoomData = try await chatRoomToChatRoomData(chatRoom, req: req)
+            return ChatRoomResponseData(responseCode: .success, chatRoom: chatRoomData)
         } else {
             return ChatRoomResponseData(responseCode: .invalid, chatRoom: nil)
         }

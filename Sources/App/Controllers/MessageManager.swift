@@ -32,6 +32,10 @@ actor MessageManager{
         }
     }
     
+    func reconnectWebSocket(_ data: Message, _ req: Request, _ socket: WebSocket){
+        userWebSocket[data.chatRoomId]!.participants[data.senderId] = socket
+    }
+    
     func createGroupChatTable(_ chatRoomId:UUID, _ req: Request)async throws {
         let _ = try await req.db.schema(chatRoomId.uuidString)
                     .id()
@@ -80,6 +84,8 @@ actor MessageManager{
                 message.text = "\(senderName)님이 입장하셨습니다."
             case .leave:
                 message.text = "\(senderName)님이 퇴장하셨습니다."
+            case .reconnect:
+                break
             }
             
             message.timestamp = Date().timeIntervalSince1970

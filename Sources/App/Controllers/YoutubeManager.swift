@@ -127,7 +127,7 @@ class YoutubeManager{
         urlComponents.queryItems = [
             URLQueryItem(name: "part", value: "snippet,contentDetails"),
             URLQueryItem(name: "id", value: id),
-            URLQueryItem(name: "key", value: apiKey ?? "AIzaSyAGGG0psQI750JmogzFzdKiStjgXdSHYrY")
+            URLQueryItem(name: "key", value: apiKey ?? "")
         ]
         
         guard let response = try await req.client.get(URI(string: urlComponents.string!)).body,
