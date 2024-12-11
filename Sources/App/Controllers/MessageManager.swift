@@ -39,11 +39,10 @@ actor MessageManager{
     func createGroupChatTable(_ chatRoomId:UUID, _ req: Request)async throws {
         let _ = try await req.db.schema(chatRoomId.uuidString)
                     .id()
-                    .field("groupchat_id", .uuid)
+                    .field("chatroom_id", .uuid)
                     .field("sender_id", .uuid)
                     .field("type", .int64)
-                    .field("message", .string)
-                    .field("image", .string)
+                    .field("text", .string)
                     .field("timestamp", .double)
                     .create()
     }
@@ -68,7 +67,7 @@ actor MessageManager{
             var message = data
             var senderName = ""
             
-            if message.messageType == .video || message.messageType == .enter || message.messageType == .leave {
+            if message.messageType == .addVideo || message.messageType == .enter || message.messageType == .leave {
                 senderName = try await User.find(message.senderId, on: req.db).flatMap{
                     return $0.name
                 } ?? ""
@@ -77,7 +76,7 @@ actor MessageManager{
             switch message.messageType{
             case .text: fallthrough
             case .image: break
-            case .video:
+            case .addVideo:
                 message.text = "\(senderName)님이 비디오를 추가하셨습니다."
                 break
             case .enter:
@@ -85,6 +84,8 @@ actor MessageManager{
             case .leave:
                 message.text = "\(senderName)님이 퇴장하셨습니다."
             case .reconnect:
+                break
+            case .deleteVideo:
                 break
             }
             
@@ -95,7 +96,7 @@ actor MessageManager{
             print("✅ sendData : \(message.text)")
             
             // 채팅 시간 업데이트
-            if [.text, .image, .video].contains(message.messageType){
+            if [.text, .image, .addVideo].contains(message.messageType){
                 let _ = try await ChatRoom.find(message.chatRoomId, on: req.db).flatMap{
                     $0.lastChatTime = message.timestamp
                     return $0.update(on: req.db)
@@ -106,9 +107,9 @@ actor MessageManager{
     
     func saveMessage(_ data:Message,_ req: Request) async throws{
         let db = req.db as! SQLDatabase
-        
+
         let scheme = "\"\(data.chatRoomId)\""
-        let query = SQLQueryString("INSERT INTO \(unsafeRaw: scheme) (id, groupchat_id, sender_id, type, message, image, timestamp) VALUES (\(bind: UUID()), \(bind: data.chatRoomId), \(bind: data.senderId), \(bind: data.messageType), \(bind: data.text), \(bind: data.image), \(bind: data.timestamp))")
+        let query = SQLQueryString("INSERT INTO \(unsafeRaw: scheme) (id, chatroom_id, sender_id, type, text, timestamp) VALUES (\(bind: UUID()), \(bind: data.chatRoomId), \(bind: data.senderId), \(bind: data.messageType), \(bind: data.text), \(bind: data.timestamp))")
 
         let _ = db.raw(query).run()
             .flatMapErrorThrowing { error in

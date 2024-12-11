@@ -5,7 +5,9 @@
 //  Created by 홍승아 on 7/11/24.
 //
 
+import Foundation
 import Fluent
+import SQLKit
 import Vapor
 
 struct ChatController: RouteCollection{
@@ -20,12 +22,13 @@ struct ChatController: RouteCollection{
         chat.grouped("leave").post(use: { try await self.leaveChatRoom(req: $0)})
         chat.grouped("find").post(use: { try await self.findChatRoom(req: $0)})
         chat.grouped("quit").post(use: { try await self.quitChatRoom(req: $0)} )
+        
+        chat.grouped("fetchChats").post(use: { try await self.fetchChats(req: $0)} )
 
         chat.grouped("search").post(use: { try await self.searchChatRoom(req: $0)})
 
         chat.grouped("fetchVideos").post(use: { try await self.fetchVideos(req:$0) })
         chat.grouped("updateStartTime").post(use: { try await self.updateStartTime(req:$0) })
-        chat.grouped("deleteVideo").post(use: { try await self.deleteVideo(req:$0) })
         
         chat.webSocket("message"){ req, ws in self.webSocket(req: req, ws: ws) } }
     
@@ -37,18 +40,23 @@ struct ChatController: RouteCollection{
             do{
                 let jsonDecoder = JSONDecoder()
                 let message = try jsonDecoder.decode(Message.self, from: data)
+                let type = message.messageType
                 Task{
-                    if message.messageType == .enter {
+                    if type == .enter {
                         await MessageManager.shared.addWebSocket(message, req, ws)
-                    } else if message.messageType == .leave {
+                    } else if type == .leave {
                         await MessageManager.shared.removeWebSocket(message, req, ws)
                     }
                 
-                    if message.messageType == .video{
+                    if type == .addVideo{
                         let data = AddVideoRequestData(chatRoomId: message.chatRoomId, userId: message.senderId, url: message.text)
                         let video = try await self.addVideo(data: data, req: req)
-                        try await MessageManager.shared.sendData(data.chatRoomId, .video, video)
-                    } else if message.messageType == .reconnect {
+                        try await MessageManager.shared.sendData(data.chatRoomId, .addVideo, video)
+                    } else if type == .deleteVideo{
+                        let data = DeleteVideoRequestData(chatRoomId: message.chatRoomId, videoId: UUID(message.text) ?? UUID())
+                        let video = try await self.deleteVideo(data: data, req: req)
+                        try await MessageManager.shared.sendData(data.chatRoomId, .deleteVideo, video)
+                    } else if type == .reconnect {
                         await MessageManager.shared.reconnectWebSocket(message, req, ws)
                     } else {
                         await MessageManager.shared.addMessage(message, req)
@@ -89,6 +97,9 @@ struct ChatController: RouteCollection{
         let enterChatData = try req.content.decode(EnterChatRoomData.self)
         let chatRoom = try await ChatRoom.find(enterChatData.chatRoomId, on: req.db).map{
             $0.participantIds.append(enterChatData.userId)
+            if $0.allParticipantIds.filter({ $0 == enterChatData.userId }).first == nil {
+                $0.allParticipantIds.append(enterChatData.userId)
+            }
             return $0
         }
         
@@ -98,6 +109,13 @@ struct ChatController: RouteCollection{
             }
             let _ = try await chatRoom.update(on: req.db)
             let chatRoomData = try await chatRoomToChatRoomData(chatRoom, req: req)
+            
+            if var enterUser = try await User.find(enterChatData.userId, on: req.db){
+                let participantData = ParticipantData(type: .enter, user: enterUser)
+                enterUser.image = ""
+                try await MessageManager.shared.sendData(chatRoom.id!, .participant, enterUser)
+            }
+            
             return ChatRoomResponseData(responseCode: .success, chatRoom: chatRoomData)
         } else {
             return ChatRoomResponseData(responseCode: .invalid, chatRoom: nil)
@@ -122,6 +140,11 @@ struct ChatController: RouteCollection{
                     }
                     let _ = try await chatRoom.update(on: req.db)
                 }
+                /*
+                if let leaveUser = try await User.find(enterChatData.userId, on: req.db){
+                    let participantData = ParticipantData(type: .leave, user: leaveUser)
+                    try await MessageManager.shared.sendData(chatRoom.id!, .participant, leaveUser)
+                }*/
                 
                 return ResponseData(responseCode: .success)
             }
@@ -158,7 +181,7 @@ struct ChatController: RouteCollection{
         var users: [User] = []
         
         if let chatRoom = chatRoom{
-            let participantIds = chatRoom.participantIds
+            let participantIds = chatRoom.allParticipantIds
             for id in participantIds {
                 if let user = try await User.find(id, on: req.db) {
                     /*if chatRoom.chatOptions.contains(ChatOption.anonymous.rawValue){
@@ -177,7 +200,19 @@ struct ChatController: RouteCollection{
             let users = try await fetchParticipants(id: id, req: req)
             participants = users
         }
-        return ChatRoomData(id: chatRoom.id, name: chatRoom.name, description: chatRoom.description, image: chatRoom.image, enterCode: chatRoom.enterCode, hostId: chatRoom.hostId, participantIds: chatRoom.participantIds, participants: participants, chatOptions: chatRoom.chatOptions, categories: chatRoom.categories, lastChatTime: chatRoom.lastChatTime)
+        return ChatRoomData(id: chatRoom.id, name: chatRoom.name, description: chatRoom.description, image: chatRoom.image, enterCode: chatRoom.enterCode, hostId: chatRoom.hostId, participantIds: chatRoom.participantIds, allParticipantIds: chatRoom.allParticipantIds, participants: participants, chatOptions: chatRoom.chatOptions, categories: chatRoom.categories, lastChatTime: chatRoom.lastChatTime)
+    }
+    
+    func fetchChats(req: Request) async throws -> [Message] {
+        let enterChatData = try req.content.decode(ChatRoomRequestData.self)
+        
+        let db = req.db as! SQLDatabase
+        
+        let scheme = "\"\(enterChatData.chatRoomId.uuidString)\""
+        let query = SQLQueryString("SELECT * FROM \(unsafeRaw: scheme)")
+        let response = try await db.raw(query).all(decoding: Message.self)
+        
+        return response
     }
 
 }
@@ -197,24 +232,32 @@ extension ChatController{
         return try await YoutubeManager.shared.fetchVideos(data.chatRoomId, req)
     }
     
-    func addVideo(data: AddVideoRequestData, req: Request) async throws -> AddVideoResponseData{
-        if let video = try await YoutubeManager.shared.fetchVideo(data, req){
+    func addVideo(data: AddVideoRequestData, req: Request) async throws -> VideoResponseData{
+        if var video = try await YoutubeManager.shared.fetchVideo(data, req){
+            var videos = try await YoutubeManager.shared.fetchVideos(data.chatRoomId, req)
+            if videos.count == 0 {
+                video.startTime = Date().timeIntervalSince1970
+            } else {
+                video.startTime = videos.last?.endTime ?? 0
+            }
+            video.endTime = video.startTime + video.duration
             try await YoutubeManager.shared.saveVideo(data.chatRoomId, video, req)
-            let videos = try await YoutubeManager.shared.fetchVideos(data.chatRoomId, req)
-            return AddVideoResponseData(responseCode: .success, videos: videos)
+            return VideoResponseData(responseCode: .success, video: video)
         }
-        return AddVideoResponseData(responseCode: .failure, videos: [])
+        return VideoResponseData(responseCode: .failure)
+    }
+    
+    func deleteVideo(data: DeleteVideoRequestData, req: Request) async throws -> VideoResponseData{
+        let video = try await YoutubeManager.shared.deleteVideo(data, req)
+        if let video = video {
+            return VideoResponseData(responseCode: .success, video: video)
+        }
+        return VideoResponseData(responseCode: .failure)
     }
     
     func updateStartTime(req: Request) async throws -> ResponseData{
         let data = try req.content.decode(StartVideoRequestData.self)
         let response = try await YoutubeManager.shared.updateStartTime(data, req)
-        return ResponseData(responseCode: response)
-    }
-    
-    func deleteVideo(req: Request) async throws -> ResponseData{
-        let data = try req.content.decode(DeleteVideoRequestData.self)
-        let response = try await YoutubeManager.shared.deleteVideo(data, req)
         return ResponseData(responseCode: response)
     }
 }

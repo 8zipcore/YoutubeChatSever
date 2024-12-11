@@ -17,6 +17,7 @@ struct Video: Content{
     var duration: Double
     var startTime: Double
     var endTime: Double
+    var uploadTime: Double
     
     enum CodingKeys: String, CodingKey {
         case id
@@ -28,5 +29,6 @@ struct Video: Content{
         case duration
         case startTime = "start_time"
         case endTime = "end_time"
+        case uploadTime = "upload_time"
     }
 }

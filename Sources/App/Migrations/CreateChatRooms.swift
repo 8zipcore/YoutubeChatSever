@@ -19,6 +19,7 @@ struct CreateChatRooms: AsyncMigration{
             .field("enter_code", .string)
             .field("host_id", .uuid)
             .field("participant_ids", .array(of: .uuid))
+            .field("all_participant_ids", .array(of: .uuid))
             .field("chat_options", .array(of: .int))
             .field("categories", .array(of: .string))
             .field("last_chat_time", .double)

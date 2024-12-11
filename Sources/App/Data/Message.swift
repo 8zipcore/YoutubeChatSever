@@ -14,7 +14,7 @@ enum ChatOption: Int, Codable{
 }
 
 enum MessageType:Int, Codable{
-    case text, image, video, enter, leave, reconnect
+    case text, image, addVideo, deleteVideo, enter, leave, reconnect
 }
 
 struct Message: Content{
@@ -23,8 +23,15 @@ struct Message: Content{
     var senderId: UUID
     var messageType: MessageType
     var text: String = ""
-    var image: String?
     var timestamp: Double
-    var isRead: Bool
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case chatRoomId = "chatroom_id"
+        case senderId = "sender_id"
+        case messageType = "type"
+        case text
+        case timestamp
+    }
 }
 

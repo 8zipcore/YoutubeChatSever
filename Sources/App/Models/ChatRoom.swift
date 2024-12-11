@@ -33,6 +33,9 @@ final class ChatRoom: Model, Content, @unchecked Sendable {
     @Field(key: "participant_ids")
     var participantIds: [UUID]
     
+    @Field(key: "all_participant_ids")
+    var allParticipantIds: [UUID]
+    
     @Field(key: "chat_options")
     var chatOptions: [Int]
     
@@ -44,7 +47,7 @@ final class ChatRoom: Model, Content, @unchecked Sendable {
 
     init() { }
     
-    init(id: UUID? = nil, name: String, description: String, image: String, enterCode: String, hostId: UUID, participantIds: [UUID], chatOptions: [Int], categories: [String], lastChatTime: Double){
+    init(id: UUID? = nil, name: String, description: String, image: String, enterCode: String, hostId: UUID, participantIds: [UUID], allParticipantsIds: [UUID], chatOptions: [Int], categories: [String], lastChatTime: Double){
         self.id = id
         self.name = name
         self.description = description
@@ -52,6 +55,7 @@ final class ChatRoom: Model, Content, @unchecked Sendable {
         self.enterCode = enterCode
         self.hostId = hostId
         self.participantIds = participantIds
+        self.allParticipantIds = allParticipantsIds
         self.chatOptions = chatOptions
         self.categories = categories
         self.lastChatTime = lastChatTime

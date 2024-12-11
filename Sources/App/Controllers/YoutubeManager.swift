@@ -9,6 +9,7 @@ import Foundation
 import Fluent
 import SQLKit
 import Vapor
+import PostgresKit
 
 class YoutubeManager{
     static let shared = YoutubeManager()
@@ -24,6 +25,7 @@ class YoutubeManager{
                     .field("duration", .double)
                     .field("start_time", .double)
                     .field("end_time", .double)
+                    .field("upload_time", .double)
                     .create()
     }
     
@@ -48,8 +50,24 @@ class YoutubeManager{
         let scheme = "\"\(chatRoomId.uuidString)_youtube\""
         let query = SQLQueryString("SELECT * FROM \(unsafeRaw: scheme)")
 
-        let response = try await db.raw(query).all(decoding: Video.self)
-        print(response)
+        var response = try await db.raw(query).all(decoding: Video.self).sorted(by: { $0.uploadTime < $1.uploadTime})
+        
+        let currentTime = Date().timeIntervalSince1970
+        
+        var deleteIdArray: [UUID] = []
+        
+        for index in response.indices {
+            if response[index].endTime < currentTime{
+                try await deleteVideo(chatRoomId, response[index].id!, req)
+                deleteIdArray.append(response[index].id!)
+            }
+        }
+        
+        let deleteIdSet = Set(deleteIdArray)
+        response = response.filter { !deleteIdSet.contains($0.id!) }
+        
+        print("✅ video data 블러오기 성공")
+        
         return response
     }
     
@@ -57,7 +75,7 @@ class YoutubeManager{
         let db = req.db as! SQLDatabase
         
         let scheme = "\"\(chatRoomId.uuidString)_youtube\""
-        let query = SQLQueryString("INSERT INTO \(unsafeRaw: scheme) (id, youtube_id, user_id, title, uploader, thumbnail, duration, start_time, end_time) VALUES (\(bind: UUID()), \(bind: video.youtubeId), \(bind: video.userId), \(bind: video.title), \(bind: video.uploader), \(bind: video.thumbnail), \(bind: video.duration), \(bind: video.startTime), \(bind: video.endTime))")
+        let query = SQLQueryString("INSERT INTO \(unsafeRaw: scheme) (id, youtube_id, user_id, title, uploader, thumbnail, duration, start_time, end_time, upload_time) VALUES (\(bind: video.id), \(bind: video.youtubeId), \(bind: video.userId), \(bind: video.title), \(bind: video.uploader), \(bind: video.thumbnail), \(bind: video.duration), \(bind: video.startTime), \(bind: video.endTime), \(bind: video.uploadTime))")
 
         let _ = db.raw(query).run()
             .flatMapErrorThrowing { error in
@@ -86,13 +104,51 @@ class YoutubeManager{
         return .success
     }
     
-    func deleteVideo(_ data: DeleteVideoRequestData, _ req: Request) async throws -> ResponseCode {
+    func deleteVideo(_ chatRoomId: UUID, _ videoId: UUID, _ req: Request) async throws {
+        let db = req.db as! SQLDatabase
+        
+        try await db.delete(from: "\(chatRoomId.uuidString)_youtube" )
+            .orWhere("id", .equal, videoId)
+            .run()
+    }
+    
+    func deleteVideo(_ data: DeleteVideoRequestData, _ req: Request) async throws -> Video? {
+        var videos = try await fetchVideos(data.chatRoomId, req)
+        
+        var deleteVideoIndex = -1
+        var endTime: Double = .zero
+        let currentTime = Date().timeIntervalSince1970
+        
+        for index in videos.indices{
+            if videos[index].id == data.videoId {
+                deleteVideoIndex = index
+                if index == 0 {
+                    endTime = currentTime
+                } else {
+                    endTime = videos[index - 1].endTime
+                }
+            }
+            
+            if index > deleteVideoIndex && deleteVideoIndex != -1{
+                videos[index].startTime = endTime
+                videos[index].endTime = endTime + videos[index].duration
+            }
+        }
+        
+        var result: Video? = nil
+        
+        if deleteVideoIndex > -1 {
+            result = videos[deleteVideoIndex]
+            videos.remove(at: deleteVideoIndex)
+        }
         let db = req.db as! SQLDatabase
         
         let scheme = "\"\(data.chatRoomId.uuidString)_youtube\""
         
-        let query = SQLQueryString("DELETE FROM \(unsafeRaw: scheme) WHERE id = \(unsafeRaw: String(data.videoId.uuidString))")
-
+        let query = SQLQueryString("""
+        DELETE FROM \(unsafeRaw: scheme);
+        """)
+        
         let _ = db.raw(query).run()
             .flatMapErrorThrowing { error in
                 // SQL 쿼리 실행 오류 처리
@@ -100,7 +156,34 @@ class YoutubeManager{
                 throw Abort(.internalServerError, reason: "Failed to execute query: \(error)")
             }
         
-        return .success
+        // INSERT 쿼리 생성
+          var insertQuery = db.insert(into: "\(data.chatRoomId.uuidString)_youtube")
+              .columns("id", "youtube_id", "user_id", "title", "uploader", "thumbnail", "duration", "start_time", "end_time", "upload_time")
+
+          // 각 비디오 데이터 추가
+          for video in videos {
+              insertQuery = insertQuery.values(
+                  SQLBind(video.id),
+                  SQLBind(video.youtubeId),
+                  SQLBind(video.userId),
+                  SQLBind(video.title),
+                  SQLBind(video.uploader),
+                  SQLBind(video.thumbnail),
+                  SQLBind(video.duration),
+                  SQLBind(video.startTime),
+                  SQLBind(video.endTime),
+                  SQLBind(video.uploadTime)
+              )
+          }
+    
+        let _ = insertQuery.run()
+            .flatMapErrorThrowing { error in
+                // SQL 쿼리 실행 오류 처리
+                print(String(reflecting: error))
+                throw Abort(.internalServerError, reason: "Failed to execute query: \(error)")
+            }
+        
+        return result
     }
     
     func fetchVideo(_ data: AddVideoRequestData, _ req: Request) async throws -> Video?{
@@ -127,7 +210,7 @@ class YoutubeManager{
         urlComponents.queryItems = [
             URLQueryItem(name: "part", value: "snippet,contentDetails"),
             URLQueryItem(name: "id", value: id),
-            URLQueryItem(name: "key", value: apiKey ?? "")
+            URLQueryItem(name: "key", value: apiKey ?? "AIzaSyDsPCM-xZ1WMJwltr5zbjSkLZE2bOe9h0o")
         ]
         
         guard let response = try await req.client.get(URI(string: urlComponents.string!)).body,
@@ -136,7 +219,7 @@ class YoutubeManager{
         if let items = json["items"] as? [[String:Any]], items.count > 0{
             if let contentDetail = items[0]["contentDetails"] as? [String:Any], let snippet = items[0]["snippet"] as? [String:Any]{
                 if let thumbnails = snippet["thumbnails"] as? [String:Any], let thumbnail = thumbnails["medium"] as? [String:Any]{
-                    let video = Video(youtubeId: id, userId: data.userId, title: snippet["title"] as? String ?? "-", uploader: snippet["channelTitle"] as? String ?? "-", thumbnail: thumbnail["url"] as? String ?? "-", duration: parseYouTubeDuration(duration: contentDetail["duration"] as? String ?? "0"), startTime: 0, endTime: 0)
+                    let video = Video(id: UUID(), youtubeId: id, userId: data.userId, title: snippet["title"] as? String ?? "-", uploader: snippet["channelTitle"] as? String ?? "-", thumbnail: thumbnail["url"] as? String ?? "-", duration: parseYouTubeDuration(duration: contentDetail["duration"] as? String ?? "0"), startTime: 0, endTime: 0, uploadTime: Date().timeIntervalSince1970)
                     return video
                 }
             }

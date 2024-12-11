@@ -12,7 +12,7 @@ enum EnterCodeResponse: Int, Codable{
 }
 
 enum SendDataType: Int, Codable{
-    case message, video
+    case message, addVideo, deleteVideo, participant
 }
 
 struct EnterChatResponseData: Content{
@@ -32,9 +32,9 @@ struct ResponseData: Content{
     var responseCode: ResponseCode
 }
 
-struct AddVideoResponseData: Content{
+struct VideoResponseData: Codable{
     var responseCode: ResponseCode
-    var videos: [Video]
+    var video: Video?
 }
 
 struct SendData: Content{
@@ -45,4 +45,9 @@ struct SendData: Content{
 struct ChatRoomResponseData: Content{
     var responseCode: EnterChatRoomResponseCode
     var chatRoom: ChatRoomData?
+}
+
+struct ParticipantData: Content {
+    var type: MessageType
+    var user: User
 }

@@ -15,6 +15,7 @@ struct ChatRoomData: Content{
     var enterCode: String
     var hostId: UUID
     var participantIds: [UUID]
+    var allParticipantIds: [UUID]
     var participants: [User] // ChatRoom과 다른 변수 !!
     var chatOptions: [Int]
     var categories: [String]
