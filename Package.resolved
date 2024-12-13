@@ -55,12 +55,48 @@
       }
     },
     {
-      "identity" : "mailgun",
+      "identity" : "functions-swift",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/vapor-community/mailgun.git",
+      "location" : "https://github.com/supabase-community/functions-swift",
       "state" : {
-        "revision" : "cb9e4d6d1b760739bf288b07c41bb01bbfe578c5",
-        "version" : "5.0.0"
+        "revision" : "d2fac1980cf5b589077b635d4e18249f7939a9db",
+        "version" : "1.1.1"
+      }
+    },
+    {
+      "identity" : "get",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/kean/Get",
+      "state" : {
+        "revision" : "31249885da1052872e0ac91a2943f62567c0d96d",
+        "version" : "2.2.1"
+      }
+    },
+    {
+      "identity" : "getextensions",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/binaryscraping/GetExtensions",
+      "state" : {
+        "revision" : "aa20f38721142eb6592b2c8f11179d32d7d70ae3",
+        "version" : "1.0.0"
+      }
+    },
+    {
+      "identity" : "gotrue-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/supabase-community/gotrue-swift",
+      "state" : {
+        "revision" : "e53731e21569b2e9ce6f58763ad0fbce8e2e7603",
+        "version" : "1.3.0"
+      }
+    },
+    {
+      "identity" : "keychainaccess",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/kishikawakatsumi/KeychainAccess",
+      "state" : {
+        "revision" : "84e546727d66f1adc5439debad16270d0fdd04e7",
+        "version" : "4.2.2"
       }
     },
     {
@@ -91,6 +127,24 @@
       }
     },
     {
+      "identity" : "postgrest-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/supabase-community/postgrest-swift",
+      "state" : {
+        "revision" : "2afb40a2f91ba881db8f04131e1b5146001813a5",
+        "version" : "1.0.3"
+      }
+    },
+    {
+      "identity" : "realtime-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/supabase-community/realtime-swift.git",
+      "state" : {
+        "revision" : "0b985c687fe963f6bd818ff77a35c27247b98bb4",
+        "version" : "0.0.2"
+      }
+    },
+    {
       "identity" : "routing-kit",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/routing-kit.git",
@@ -106,6 +160,24 @@
       "state" : {
         "revision" : "9afdc96113b673819ccdc4819f77e901c698a87a",
         "version" : "3.29.3"
+      }
+    },
+    {
+      "identity" : "storage-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/supabase-community/storage-swift.git",
+      "state" : {
+        "revision" : "65cae9e1156711043cbdebb27b4df93cbef46a1b",
+        "version" : "0.1.4"
+      }
+    },
+    {
+      "identity" : "supabase-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/supabase-community/supabase-swift.git",
+      "state" : {
+        "revision" : "7088b85247c8e56317f0b22b9d60655e8f762fec",
+        "version" : "0.3.0"
       }
     },
     {
@@ -250,6 +322,15 @@
       "state" : {
         "revision" : "025bcb1165deab2e20d4eaba79967ce73013f496",
         "version" : "1.2.1"
+      }
+    },
+    {
+      "identity" : "urlqueryencoder",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/kean/URLQueryEncoder",
+      "state" : {
+        "revision" : "4ce950479707ea109f229d7230ec074a133b15d7",
+        "version" : "0.2.1"
       }
     },
     {

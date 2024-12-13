@@ -48,3 +48,16 @@ struct SearchChatRoomData: Content{
     var searchTerm: String
     var chatOptions: [ChatOption]
 }
+
+struct UserData: Content{
+    var id: String
+    var name: String
+    var description: String
+    var image: Data?
+    var backgroundImage: Data?
+}
+
+struct ChatRoomImageData: Content{
+    var id: String
+    var image: Data?
+}

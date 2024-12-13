@@ -15,8 +15,8 @@ let package = Package(
         .package(url: "https://github.com/vapor/fluent-postgres-driver.git", from: "2.8.0"),
         // SQLKit
         .package(url: "https://github.com/vapor/sql-kit.git", from: "3.0.0"),
-        // 💌 Sending Email API
-        .package(url: "https://github.com/vapor-community/mailgun.git", from: "5.0.0"),
+        // ⚡️ Supabase
+        .package(url: "https://github.com/supabase-community/supabase-swift.git", from: "0.2.0")
     ],
     targets: [
         .executableTarget(
@@ -25,8 +25,8 @@ let package = Package(
                 .product(name: "Fluent", package: "fluent"),
                 .product(name: "FluentPostgresDriver", package: "fluent-postgres-driver"),
                 .product(name: "Vapor", package: "vapor"),
-                .product(name: "Mailgun", package: "mailgun"),
-                .product(name: "SQLKit", package: "sql-kit")
+                .product(name: "SQLKit", package: "sql-kit"),
+                .product(name: "Supabase", package: "supabase-swift"),
             ],
             swiftSettings: swiftSettings
         ),

@@ -9,6 +9,7 @@ import Foundation
 import Fluent
 import SQLKit
 import Vapor
+import MultipartKit
 
 struct ChatController: RouteCollection{
     
@@ -18,19 +19,22 @@ struct ChatController: RouteCollection{
         chat.grouped("fetch").get(use: { try await self.fetchAllChatRoom(req: $0)})
         
         chat.grouped("create").post(use: { try await self.create(req: $0) })
+        chat.grouped("update").post(use: { try await self.update(req: $0) })
+        chat.grouped("uploadImage").post(use: { try await self.uploadImage(req: $0) } )
         chat.grouped("enter").post(use: { try await self.enterChatRoom(req: $0)} )
         chat.grouped("leave").post(use: { try await self.leaveChatRoom(req: $0)})
         chat.grouped("find").post(use: { try await self.findChatRoom(req: $0)})
         chat.grouped("quit").post(use: { try await self.quitChatRoom(req: $0)} )
         
         chat.grouped("fetchChats").post(use: { try await self.fetchChats(req: $0)} )
-
+        
         chat.grouped("search").post(use: { try await self.searchChatRoom(req: $0)})
-
+        
         chat.grouped("fetchVideos").post(use: { try await self.fetchVideos(req:$0) })
         chat.grouped("updateStartTime").post(use: { try await self.updateStartTime(req:$0) })
         
-        chat.webSocket("message"){ req, ws in self.webSocket(req: req, ws: ws) } }
+        chat.webSocket("message"){ req, ws in self.webSocket(req: req, ws: ws) }
+    }
     
     func webSocket(req: Request, ws: WebSocket){
         print("⭐️ WebSocket connected")
@@ -83,10 +87,73 @@ struct ChatController: RouteCollection{
             try await YoutubeManager.shared.createYoutubeTable(id, req)
             try await CategoryManager.shared.addCategories(categories: chatRoom.categories, chatRoomId: id, req: req)
         }
-  
+        
         return try await chatRoomToChatRoomData(chatRoom, req: req)
+
+/*
+        try await chatRoom.save(on: req.db)
+        if let id = chatRoom.id{
+            try await MessageManager.shared.createGroupChatTable(id, req)
+            try await YoutubeManager.shared.createYoutubeTable(id, req)
+            try await CategoryManager.shared.addCategories(categories: chatRoom.categories, chatRoomId: id, req: req)
+            if let imageData = data.image{
+                chatRoom.image = try await SupabaseManager.shared.uploadImage(imageData: imageData, fileName: "\(id.uuidString)_chatRoom", path: "chatinfo", req: req)
+                try await chatRoom.save(on: req.db)
+            }
+        }
+        
+        return try await chatRoomToChatRoomData(ChatRoom(name: "", description: "", image: "", enterCode: "", hostId: UUID(), participantIds: [UUID()], allParticipantsIds: [UUID()], chatOptions: [], categories: [], lastChatTime: 0), req: req)
+ */
+    }
+
+    func update(req: Request) async throws -> ChatRoomData{
+        let newChatRoom = try req.content.decode(ChatRoom.self)
+        if let chatRoom = try await ChatRoom.find(newChatRoom.id, on: req.db), let id = chatRoom.id{
+            // 이름, 설명, 이미지, 참여코드, chatoption,
+            chatRoom.name = newChatRoom.name
+            chatRoom.description = newChatRoom.description
+            chatRoom.chatOptions = newChatRoom.chatOptions
+            if newChatRoom.chatOptions.contains(ChatOption.password.rawValue){
+                chatRoom.enterCode = newChatRoom.enterCode
+            }
+            // 카테고리
+            try await CategoryManager.shared.deleteCategories(categories: chatRoom.categories, chatRoomId: id, req: req)
+            try await CategoryManager.shared.addCategories(categories: newChatRoom.categories, chatRoomId: id, req: req)
+            
+            try await chatRoom.save(on: req.db)
+            
+            return try await chatRoomToChatRoomData(chatRoom, req: req)
+        }
+        return try await chatRoomToChatRoomData(newChatRoom, req: req)
     }
     
+    func uploadImage(req: Request) async throws -> ResponseWithStringData{
+        let data = try req.content.decode(ChatRoomImageData.self)
+        let chatRoom = try await ChatRoom.find(UUID(data.id), on: req.db)
+        
+        if let chatRoom = chatRoom, let id = chatRoom.id{
+            let fileName = "\(id.uuidString)"
+            let path = "chatinfo"
+            
+            if let imageData = data.image{
+                if chatRoom.image.count > 0 { // update
+                    try await SupabaseManager.shared.updateImage(imageData: imageData, fileName: fileName, path: path, req: req)
+                } else { // upload
+                    chatRoom.image = try await SupabaseManager.shared.uploadImage(imageData: imageData, fileName: fileName, path: path, req: req)
+                }
+            } else { //delete
+                if chatRoom.image.count > 0{
+                    try await SupabaseManager.shared.deleteImage(fileName: fileName, path: path, req: req)
+                }
+            }
+            
+            try await chatRoom.save(on: req.db)
+            
+            return ResponseWithStringData(responseCode: .success, string: chatRoom.image)
+        }
+        return ResponseWithStringData(responseCode: .failure, string: "")
+    }
+
     func findChatRoom(req: Request) async throws -> ChatRoomData{
         let enterChatData = try req.content.decode(ChatRoomRequestData.self)
         let chatRoom = try await ChatRoom.find(enterChatData.chatRoomId, on: req.db).flatMap{ return $0 }
@@ -110,7 +177,7 @@ struct ChatController: RouteCollection{
             let _ = try await chatRoom.update(on: req.db)
             let chatRoomData = try await chatRoomToChatRoomData(chatRoom, req: req)
             
-            if var enterUser = try await User.find(enterChatData.userId, on: req.db){
+            if let enterUser = try await User.find(enterChatData.userId, on: req.db){
                 let participantData = ParticipantData(type: .enter, user: enterUser)
                 enterUser.image = ""
                 try await MessageManager.shared.sendData(chatRoom.id!, .participant, enterUser)
@@ -234,7 +301,7 @@ extension ChatController{
     
     func addVideo(data: AddVideoRequestData, req: Request) async throws -> VideoResponseData{
         if var video = try await YoutubeManager.shared.fetchVideo(data, req){
-            var videos = try await YoutubeManager.shared.fetchVideos(data.chatRoomId, req)
+            let videos = try await YoutubeManager.shared.fetchVideos(data.chatRoomId, req)
             if videos.count == 0 {
                 video.startTime = Date().timeIntervalSince1970
             } else {

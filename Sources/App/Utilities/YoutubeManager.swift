@@ -14,6 +14,12 @@ import PostgresKit
 class YoutubeManager{
     static let shared = YoutubeManager()
     
+    var apiKey = ""
+    
+    func setAPIKey(_ apiKey: String){
+        self.apiKey = apiKey
+    }
+    
     func createYoutubeTable(_ chatRoomId:UUID, _ req: Request)async throws {
         let _ = try await req.db.schema("\(chatRoomId.uuidString)_youtube")
                     .field("id", .uuid)
@@ -205,12 +211,11 @@ class YoutubeManager{
         
         // 요청 보낼 URL 생성
         var urlComponents = URLComponents(string: "https://youtube.googleapis.com/youtube/v3/videos")!
-        let apiKey = Environment.get("YOUTUBE_API_KEY")
         
         urlComponents.queryItems = [
             URLQueryItem(name: "part", value: "snippet,contentDetails"),
             URLQueryItem(name: "id", value: id),
-            URLQueryItem(name: "key", value: apiKey ?? "AIzaSyDsPCM-xZ1WMJwltr5zbjSkLZE2bOe9h0o")
+            URLQueryItem(name: "key", value: apiKey)
         ]
         
         guard let response = try await req.client.get(URI(string: urlComponents.string!)).body,
