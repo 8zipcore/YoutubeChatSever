@@ -75,6 +75,7 @@ struct UserController: RouteCollection{
                     newUser.backgroundImage = ""
                 }
             }
+               
             let _ = try await User.find(newUser.id, on: req.db).map{
                 $0.name = newUser.name
                 $0.description = newUser.description

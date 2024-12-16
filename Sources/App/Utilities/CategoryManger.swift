@@ -42,7 +42,7 @@ actor CategoryManager{
     
     func fetchTop5Categories(req: Request) async throws -> [String]{
         let categories = try await Category.query(on: req.db)
-                                           .sort(\.$count, .ascending)
+                                           .sort(\.$count, .descending)
                                            .range(0..<5)
                                            .all()
                                            .map{

@@ -21,11 +21,11 @@ public func configure(_ app: Application) async throws {
     
      app.databases.use(try .postgres(url: Environment.get("DATABASE_URL") ?? ""), as: .psql)
     print("✅ DATABASE_URL : \(Environment.get("DATABASE_URL") ?? "nil")")
-//    SupabaseManager.shared.setSupabase(supabaseUrl: Environment.get("SUPABASE_URL") ?? "",
-//                                       supabaseKey: Environment.get("SUPABASE_KEY") ?? "",
-//                                       bucketName: Environment.get("SUPABASE_BUCKET_NAME") ?? "")
-//    
-//    YoutubeManager.shared.setAPIKey(Environment.get("YOUTUBE_API_KEY") ?? "")
+    SupabaseManager.shared.setSupabase(supabaseUrl: Environment.get("SUPABASE_URL") ?? "",
+                                       supabaseKey: Environment.get("SUPABASE_KEY") ?? "",
+                                       bucketName: Environment.get("SUPABASE_BUCKET_NAME") ?? "")
+    
+    YoutubeManager.shared.setAPIKey(Environment.get("YOUTUBE_API_KEY") ?? "")
     
     app.migrations.add(CreateUsers())
     app.migrations.add(CreateChatRooms())

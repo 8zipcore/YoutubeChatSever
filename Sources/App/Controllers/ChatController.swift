@@ -80,14 +80,13 @@ struct ChatController: RouteCollection{
     
     func create(req: Request) async throws -> ChatRoomData{
         let chatRoom = try req.content.decode(ChatRoom.self)
-
+        print("chatRoom : \(chatRoom)")
         try await chatRoom.save(on: req.db)
         if let id = chatRoom.id{
             try await MessageManager.shared.createGroupChatTable(id, req)
             try await YoutubeManager.shared.createYoutubeTable(id, req)
             try await CategoryManager.shared.addCategories(categories: chatRoom.categories, chatRoomId: id, req: req)
         }
-        
         return try await chatRoomToChatRoomData(chatRoom, req: req)
 
 /*
@@ -267,17 +266,22 @@ struct ChatController: RouteCollection{
             let users = try await fetchParticipants(id: id, req: req)
             participants = users
         }
-        return ChatRoomData(id: chatRoom.id, name: chatRoom.name, description: chatRoom.description, image: chatRoom.image, enterCode: chatRoom.enterCode, hostId: chatRoom.hostId, participantIds: chatRoom.participantIds, allParticipantIds: chatRoom.allParticipantIds, participants: participants, chatOptions: chatRoom.chatOptions, categories: chatRoom.categories, lastChatTime: chatRoom.lastChatTime)
+        return ChatRoomData(id: chatRoom.id, name: chatRoom.name, description: chatRoom.description, image: chatRoom.image, enterCode: chatRoom.enterCode, hostId: chatRoom.hostId, participantIds: chatRoom.participantIds, enterTimes: chatRoom.enterTimes, allParticipantIds: chatRoom.allParticipantIds, participants: participants, chatOptions: chatRoom.chatOptions, categories: chatRoom.categories, lastChatTime: chatRoom.lastChatTime)
     }
     
     func fetchChats(req: Request) async throws -> [Message] {
         let enterChatData = try req.content.decode(ChatRoomRequestData.self)
+        var enterTime: Double = 0
+        
+        if let chatRoom = try await ChatRoom.find(enterChatData.chatRoomId, on: req.db){
+            enterTime = chatRoom.enterTimes[enterChatData.userId.uuidString] ?? Date().timeIntervalSince1970
+        }
+        
         
         let db = req.db as! SQLDatabase
-        
         let scheme = "\"\(enterChatData.chatRoomId.uuidString)\""
         let query = SQLQueryString("SELECT * FROM \(unsafeRaw: scheme)")
-        let response = try await db.raw(query).all(decoding: Message.self)
+        let response = try await db.raw(query).all(decoding: Message.self).filter{ $0.timestamp >= enterTime }
         
         return response
     }

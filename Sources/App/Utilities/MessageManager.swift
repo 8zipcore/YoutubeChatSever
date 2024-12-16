@@ -65,12 +65,12 @@ actor MessageManager{
     func addMessage(_ data: Message, _ req: Request){
         Task{
             var message = data
+            var user: User?
             var senderName = ""
             
             if message.messageType == .addVideo || message.messageType == .enter || message.messageType == .leave {
-                senderName = try await User.find(message.senderId, on: req.db).flatMap{
-                    return $0.name
-                } ?? ""
+                user = try await User.find(message.senderId, on: req.db)
+                senderName = user?.name ?? ""
             }
             
             switch message.messageType{
@@ -100,6 +100,20 @@ actor MessageManager{
                 let _ = try await ChatRoom.find(message.chatRoomId, on: req.db).flatMap{
                     $0.lastChatTime = message.timestamp
                     return $0.update(on: req.db)
+                }
+            }
+            // 입장 시간 업데이트
+            if [.enter, .leave].contains(message.messageType), let id = user?.id?.uuidString{
+                if message.messageType == .enter{
+                    let _ = try await ChatRoom.find(message.chatRoomId, on: req.db).flatMap{
+                        $0.enterTimes[id] = message.timestamp
+                        return $0.update(on: req.db)
+                    }
+                } else if message.messageType == .leave{
+                    let _ = try await ChatRoom.find(message.chatRoomId, on: req.db).flatMap{
+                        $0.enterTimes.removeValue(forKey: id)
+                        return $0.update(on: req.db)
+                    }
                 }
             }
         }
