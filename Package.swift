@@ -4,7 +4,7 @@ import PackageDescription
 let package = Package(
     name: "YoutubeChatSever",
     platforms: [
-       .macOS(.v13)
+        .iOS(.v12), .macOS(.v13)
     ],
     dependencies: [
         // 💧 A server-side Swift web framework.
