@@ -6,66 +6,51 @@
 //
 
 import Foundation
+import Vapor
 
 public struct File: Hashable, Equatable {
-  public var name: String
-  public var data: Data
-  public var fileName: String?
-  public var contentType: String?
-
-  public init(name: String, data: Data, fileName: String?, contentType: String?) {
-    self.name = name
-    self.data = data
-    self.fileName = fileName
-    self.contentType = contentType
-  }
+    public var name: String
+    public var data: Data
+    public var fileName: String?
+    public var contentType: String?
+    
+    public init(name: String, data: Data, fileName: String?, contentType: String?) {
+        self.name = name
+        self.data = data
+        self.fileName = fileName
+        self.contentType = contentType
+    }
 }
 
 public class FormData {
-  var files: [File] = []
-  var boundary: String
-
-  public init(boundary: String = UUID().uuidString) {
-    self.boundary = boundary
-  }
-
-  public func append(file: File) {
-    files.append(file)
-  }
-
-  public var contentType: String {
-    return "multipart/form-data; boundary=\(boundary)"
-  }
-
-  public var data: Data {
-    var data = Data()
-
-    for file in files {
-      data.append("--\(boundary)\r\n")
-      data.append("Content-Disposition: form-data; name=\"\(file.name)\"")
-      if let filename = file.fileName?.replacingOccurrences(of: "\"", with: "_") {
-        data.append("; filename=\"\(filename)\"")
-      }
-      data.append("\r\n")
-      if let contentType = file.contentType {
-        data.append("Content-Type: \(contentType)\r\n")
-      }
-      data.append("\r\n")
-      data.append(file.data)
-      data.append("\r\n")
+    var file: File
+    var boundary: String
+    
+    public init(file: File) {
+        self.boundary = "Boundary-\(UUID().uuidString)"
+        self.file = file
     }
-
-    data.append("--\(boundary)--\r\n")
-    return data
-  }
-}
-
-extension Data {
-  mutating func append(_ string: String) {
-    let data = string.data(
-      using: String.Encoding.utf8,
-      allowLossyConversion: true
-    )
-    append(data!)
-  }
+    
+    public var body: ByteBuffer {
+        var body = ByteBufferAllocator().buffer(capacity: 0)
+        
+        body.writeString("--\(boundary)\r\n")
+        body.writeString("Content-Disposition: form-data; name=\"\(file.name)\"")
+        if let filename = file.fileName?.replacingOccurrences(of: "\"", with: "_") {
+            body.writeString("; filename=\"\(filename)\"")
+        }
+        
+        body.writeString("\r\n")
+        if let contentType = file.contentType {
+            body.writeString("Content-Type: \(contentType)\r\n")
+        }
+        body.writeString("\r\n")
+        var fileBuffer = ByteBuffer(data: file.data)  // 변경 가능한 ByteBuffer로 변환
+        body.writeBuffer(&fileBuffer)  // inout을 사용하기 위해 &를 추가
+        body.writeString("\r\n")
+        
+        body.writeString("--\(boundary)--\r\n")
+        
+        return body
+    }
 }
