@@ -4,7 +4,7 @@ import PackageDescription
 let package = Package(
     name: "YoutubeChatSever",
     platforms: [
-        .iOS(.v12), .macOS(.v13)
+        .macOS(.v13)
     ],
     dependencies: [
         // 💧 A server-side Swift web framework.
@@ -15,8 +15,6 @@ let package = Package(
         .package(url: "https://github.com/vapor/fluent-postgres-driver.git", from: "2.8.0"),
         // SQLKit
         .package(url: "https://github.com/vapor/sql-kit.git", from: "3.0.0"),
-        // ⚡️ Supabase
-//        .package(url: "https://github.com/supabase-community/supabase-swift.git", from: "0.2.0")
     ],
     targets: [
         .executableTarget(
@@ -26,7 +24,6 @@ let package = Package(
                 .product(name: "FluentPostgresDriver", package: "fluent-postgres-driver"),
                 .product(name: "Vapor", package: "vapor"),
                 .product(name: "SQLKit", package: "sql-kit"),
-//                .product(name: "Supabase", package: "supabase-swift"),
             ],
             swiftSettings: swiftSettings
         ),
