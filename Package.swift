@@ -16,7 +16,7 @@ let package = Package(
         // SQLKit
         .package(url: "https://github.com/vapor/sql-kit.git", from: "3.0.0"),
         // ⚡️ Supabase
-        .package(url: "https://github.com/supabase-community/supabase-swift.git", from: "0.2.0")
+//        .package(url: "https://github.com/supabase-community/supabase-swift.git", from: "0.2.0")
     ],
     targets: [
         .executableTarget(
@@ -26,7 +26,7 @@ let package = Package(
                 .product(name: "FluentPostgresDriver", package: "fluent-postgres-driver"),
                 .product(name: "Vapor", package: "vapor"),
                 .product(name: "SQLKit", package: "sql-kit"),
-                .product(name: "Supabase", package: "supabase-swift"),
+//                .product(name: "Supabase", package: "supabase-swift"),
             ],
             swiftSettings: swiftSettings
         ),

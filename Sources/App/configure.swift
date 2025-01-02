@@ -19,7 +19,7 @@ public func configure(_ app: Application) async throws {
     ), as: .psql)
     */
     
-     app.databases.use(try .postgres(url: Environment.get("DATABASE_URL") ?? ""), as: .psql)
+    app.databases.use(try .postgres(url: Environment.get("DATABASE_URL") ?? ""), as: .psql)
     print("✅ DATABASE_URL : \(Environment.get("DATABASE_URL") ?? "nil")")
     SupabaseManager.shared.setSupabase(supabaseUrl: Environment.get("SUPABASE_URL") ?? "",
                                        supabaseKey: Environment.get("SUPABASE_KEY") ?? "",
