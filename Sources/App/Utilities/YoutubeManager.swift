@@ -224,7 +224,16 @@ class YoutubeManager{
         if let items = json["items"] as? [[String:Any]], items.count > 0{
             if let contentDetail = items[0]["contentDetails"] as? [String:Any], let snippet = items[0]["snippet"] as? [String:Any]{
                 if let thumbnails = snippet["thumbnails"] as? [String:Any], let thumbnail = thumbnails["medium"] as? [String:Any]{
-                    let video = Video(id: UUID(), youtubeId: id, userId: data.userId, title: snippet["title"] as? String ?? "-", uploader: snippet["channelTitle"] as? String ?? "-", thumbnail: thumbnail["url"] as? String ?? "-", duration: parseYouTubeDuration(duration: contentDetail["duration"] as? String ?? "0"), startTime: 0, endTime: 0, uploadTime: Date().timeIntervalSince1970)
+                    let video = Video(id: UUID(), 
+                                      youtubeId: id,
+                                      userId: data.userId,
+                                      title: snippet["title"] as? String ?? "-",
+                                      uploader: snippet["channelTitle"] as? String ?? "-",
+                                      thumbnail: thumbnail["url"] as? String ?? "-",
+                                      duration: parseYouTubeDuration(duration: contentDetail["duration"] as? String ?? "0"),
+                                      startTime: 0, 
+                                      endTime: 0,
+                                      uploadTime: Date().timeIntervalSince1970)
                     return video
                 }
             }

@@ -119,7 +119,7 @@ struct ChatController: RouteCollection{
             try await CategoryManager.shared.deleteCategories(categories: chatRoom.categories, chatRoomId: id, req: req)
             try await CategoryManager.shared.addCategories(categories: newChatRoom.categories, chatRoomId: id, req: req)
             
-            try await chatRoom.save(on: req.db)
+            try await chatRoom.update(on: req.db)
             
             return try await chatRoomToChatRoomData(chatRoom, req: req)
         }
