@@ -8,10 +8,10 @@
 import Foundation
 import Fluent
 import SQLKit
-import Vapor
+@preconcurrency import Vapor
 import PostgresKit
 
-class YoutubeManager{
+actor YoutubeManager{
     static let shared = YoutubeManager()
     
     var apiKey = ""

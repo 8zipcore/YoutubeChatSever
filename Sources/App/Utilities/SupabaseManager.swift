@@ -8,7 +8,7 @@
 import Foundation
 import Vapor
 
-class SupabaseManager{
+actor SupabaseManager{
     static let shared = SupabaseManager()
     
     var supabaseUrl: String = ""
