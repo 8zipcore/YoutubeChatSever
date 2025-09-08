@@ -88,21 +88,6 @@ struct ChatController: RouteCollection{
             try await CategoryManager.shared.addCategories(categories: chatRoom.categories, chatRoomId: id, req: req)
         }
         return try await chatRoomToChatRoomData(chatRoom, req: req)
-
-/*
-        try await chatRoom.save(on: req.db)
-        if let id = chatRoom.id{
-            try await MessageManager.shared.createGroupChatTable(id, req)
-            try await YoutubeManager.shared.createYoutubeTable(id, req)
-            try await CategoryManager.shared.addCategories(categories: chatRoom.categories, chatRoomId: id, req: req)
-            if let imageData = data.image{
-                chatRoom.image = try await SupabaseManager.shared.uploadImage(imageData: imageData, fileName: "\(id.uuidString)_chatRoom", path: "chatinfo", req: req)
-                try await chatRoom.save(on: req.db)
-            }
-        }
-        
-        return try await chatRoomToChatRoomData(ChatRoom(name: "", description: "", image: "", enterCode: "", hostId: UUID(), participantIds: [UUID()], allParticipantsIds: [UUID()], chatOptions: [], categories: [], lastChatTime: 0), req: req)
- */
     }
 
     func update(req: Request) async throws -> ChatRoomData{
@@ -140,7 +125,7 @@ struct ChatController: RouteCollection{
                 } else { // upload
                     chatRoom.image = try await SupabaseManager.shared.uploadImage(imageData: imageData, fileName: fileName, path: path, req: req)
                 }
-            } else { //delete
+            } else { // delete
                 if chatRoom.image.count > 0{
                     try await SupabaseManager.shared.deleteImage(fileName: fileName, path: path, req: req)
                 }
@@ -177,8 +162,6 @@ struct ChatController: RouteCollection{
             let chatRoomData = try await chatRoomToChatRoomData(chatRoom, req: req)
             
             if let enterUser = try await User.find(enterChatData.userId, on: req.db){
-                let participantData = ParticipantData(type: .enter, user: enterUser)
-                enterUser.image = ""
                 try await MessageManager.shared.sendData(chatRoom.id!, .participant, enterUser)
             }
             
@@ -206,11 +189,6 @@ struct ChatController: RouteCollection{
                     }
                     let _ = try await chatRoom.update(on: req.db)
                 }
-                /*
-                if let leaveUser = try await User.find(enterChatData.userId, on: req.db){
-                    let participantData = ParticipantData(type: .leave, user: leaveUser)
-                    try await MessageManager.shared.sendData(chatRoom.id!, .participant, leaveUser)
-                }*/
                 
                 return ResponseData(responseCode: .success)
             }
@@ -250,9 +228,6 @@ struct ChatController: RouteCollection{
             let participantIds = chatRoom.allParticipantIds
             for id in participantIds {
                 if let user = try await User.find(id, on: req.db) {
-                    /*if chatRoom.chatOptions.contains(ChatOption.anonymous.rawValue){
-                        user.name = "익명\(users.count + 1)"
-                    }*/
                     users.append(user)
                 }
             }
@@ -287,6 +262,7 @@ struct ChatController: RouteCollection{
     }
 
 }
+
 // MARK: - Search
 extension ChatController{
     func searchChatRoom(req: Request) async throws -> [ChatRoomData]{
@@ -296,6 +272,7 @@ extension ChatController{
         return chatRooms.filter({($0.name.contains(data.searchTerm) || $0.description.contains(data.searchTerm)) && $0.chatOptions.contains(chatOptions)})
     }
 }
+
 // MARK: - Video
 extension ChatController{
     func fetchVideos(req: Request) async throws -> [Video]{
@@ -332,19 +309,3 @@ extension ChatController{
         return ResponseData(responseCode: response)
     }
 }
-// MARK: - 코드
-/*
-extension ChatController{
-    func generateEnterCode() -> String{
-        let length = 8
-        let letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-        return String((0..<length).map{ _ in letters.randomElement()! })
-    }
-    
-    func enterCodeArray(req: Request) async throws -> [String]{
-        return try await ChatRoom.query(on: req.db).all().map{
-            return $0.enterCode
-        }
-    }
-}
-*/

@@ -11,7 +11,7 @@ import Vapor
 
 final class ChatRoom: Model, Content, @unchecked Sendable {
     static let schema: String = "chat_rooms"
-    // (Id, name, description, image, backgroundImage, roomType, enterCode, hostId, participantIds, options, categories) 
+  
     @ID(key: .id)
     var id: UUID?
     

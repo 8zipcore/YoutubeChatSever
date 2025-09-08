@@ -6,7 +6,7 @@
 //
 
 import Vapor
-// id ( 그 고유번호 ), 제목, 올린사람이름, 썸네일, 시간, 시작시간, 종료시간
+
 struct Video: Content{
     var id: UUID?
     var youtubeId: String

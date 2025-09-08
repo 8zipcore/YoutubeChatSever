@@ -56,7 +56,6 @@ actor MessageManager{
 
         let _ = db.raw(query).run()
             .flatMapErrorThrowing { error in
-                // SQL 쿼리 실행 오류 처리
                 print(String(reflecting: error))
                 throw Abort(.internalServerError, reason: "Failed to execute query: \(error)")
             }
@@ -102,6 +101,7 @@ actor MessageManager{
                     return $0.update(on: req.db)
                 }
             }
+          
             // 입장 시간 업데이트
             if [.enter, .leave].contains(message.messageType), let id = user?.id?.uuidString{
                 if message.messageType == .enter{
@@ -127,24 +127,12 @@ actor MessageManager{
 
         let _ = db.raw(query).run()
             .flatMapErrorThrowing { error in
-                // SQL 쿼리 실행 오류 처리
                 print(String(reflecting: error))
                 throw Abort(.internalServerError, reason: "Failed to execute query: \(error)")
             }
 
         print("data 저장 성공")
     }
-    /*
-    func sendMessage(_ data: Message) async throws{
-        let jsonData = try JSONEncoder().encode(data)
-        
-        if let userWebSocket = userWebSocket[data.chatRoomId]{
-            for websocket in userWebSocket.participants.values{
-                websocket.send(jsonData)
-            }
-        }
-    }
-    */
     
     func sendData<T: Codable>(_ id: UUID, _ type: SendDataType, _ data: T) async throws{
         let encodeData = try JSONEncoder().encode(data)

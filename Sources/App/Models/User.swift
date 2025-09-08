@@ -27,9 +27,6 @@ final class User: Model, Content, @unchecked Sendable {
     @Field(key: "background_image")
     var backgroundImage: String
     
-    /*@Field(key: "following_ids")
-    var followingIds: [UUID]
-    */
     init() { }
     
     init(id: UUID? = nil, name: String, description: String, image: String, backgroundImage: String){

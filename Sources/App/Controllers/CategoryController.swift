@@ -47,9 +47,6 @@ struct CategoryController: RouteCollection{
             let participantIds = chatRoom.participantIds
             for id in participantIds {
                 if let user = try await User.find(id, on: req.db) {
-                    /*if chatRoom.chatOptions.contains(ChatOption.anonymous.rawValue){
-                        user.name = "익명\(users.count + 1)"
-                    }*/
                     users.append(user)
                 }
             }

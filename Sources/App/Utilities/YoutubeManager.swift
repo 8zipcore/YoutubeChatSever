@@ -251,7 +251,6 @@ class YoutubeManager{
             let minutes = match.range(at: 2).location != NSNotFound ? nsDuration.substring(with: match.range(at: 2)) : "0"
             let seconds = match.range(at: 3).location != NSNotFound ? nsDuration.substring(with: match.range(at: 3)) : "0"
             
-            // return "\(hours) hour(s), \(minutes) minute(s), \(seconds) second(s)"
             return Double(hours)! * 3600 + Double(minutes)! * 60 + Double(seconds)!
         }
         

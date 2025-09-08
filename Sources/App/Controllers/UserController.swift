@@ -28,11 +28,6 @@ struct UserController: RouteCollection{
         if let imageData = userData.image{
             user.image = try await SupabaseManager.shared.uploadImage(imageData: imageData, fileName: "\(user.id!.uuidString)_profile", path: path, req: req)
         }
-        /*
-        if let backgroundImageData = userData.backgroundImage{
-            user.backgroundImage = try await SupabaseManager.shared.uploadImage(imageData: backgroundImageData, fileName: "\(user.id!.uuidString)_background", path: path, req: req)
-        }
-         */
         try await user.save(on: req.db)
         return user
     }
@@ -95,73 +90,3 @@ struct ImageUploadData: Content, @unchecked Sendable {
     var filename: String
     var data: Data
 }
-
-
-/*
-
-// email 가입
-extension JoinController{
-    // email 유효성 체크
-    func checkIDVaildation(req: Request) async throws -> IDValidationResponseData{
-        guard let email = req.parameters.get("email") else { return IDValidationResponseData(code: .fail, id: nil)}
-       
-        let users = try await User.query(on: req.db).all()
-        
-        if let _ = users.filter({ $0.email == email }).first{
-            return IDValidationResponseData(code: .fail, id: nil, text: "계정 중복 알림/\(email) 계정은 사용하실 수 없습니다./확인")
-        } else {
-            let joinUser = JoinUser(email: email,
-                                    phoneNumber: "",
-                                    verificationCode: "")
-            try await joinUser.create(on: req.db)
-            return IDValidationResponseData(code: .success, id: joinUser.id, text: email)
-        }
-    }
-
-    // email 인증코드 전송
-    func sendEmailVerificationCode(req: Request) async throws -> HTTPStatus {
-        guard let joinUser = try await JoinUser.find(req.parameters.get("id"), on: req.db) else {
-            return .notFound
-        }
-
-        let verificationCodeToString = String(VerificationCodeGenerator().generate())
-        
-        let message = MailgunMessage(
-            from: "test@test",
-            to: joinUser.email,
-            subject: "인증번호",
-            text: verificationCodeToString
-        )
-        
-        let result = try await req.mailgun().send(message).get()
-        
-        if result.status == .ok {
-            let _ = try await JoinUser.find(req.parameters.get("id"), on: req.db)
-                .flatMap{
-                    $0.verificationCode = verificationCodeToString
-                    return $0.update(on: req.db)
-                }
-            
-            return .ok
-        }
-        
-        return .badRequest
-    }
-    
-    // email 인증 번호 체크
-    func verifyEmailVerificationCode(req: Request) async throws -> EmailVerificationResponseCode{
-        let data = try req.content.decode(EmailVerificationRequestData.self)
-        
-        guard let joinUser = try await JoinUser.find(data.id, on: req.db) else {
-            return .fail
-        }
-        
-        if data.verificationCode.elementsEqual(joinUser.verificationCode){
-            return .success
-        }
-        
-        return .fail
-    }
-}
-
-*/
